@@ -1,0 +1,165 @@
+---
+title: "EPG Data analysis"
+author: "Daniel Kunk"
+date: "2/10/2022"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      results = "hide")
+```
+
+# EPG Statistical Analysis Code Package. 
+### This code was designed to preform statistical analysis on a csv file output from the Serrea Workbook. Please see .readme file to understand how to set up the .csv file so that it can be compatible with this code. 
+```{r}
+# loading the .csv file output. This file is designed off the output from the Serrea EPG workbook. 
+# assigning the csv file to a data frame called epgdata. 
+epgdata = read.csv('C:/Users/danie/Desktop/NALAM LAB/EPG/EPG ANALYSIS/24_LD_EPG DATA/DKVERSION_24hr_LD_EPGDATA .csv')
+epgdata
+```
+
+
+```{r}
+# Running all of the K.W tests for each parameter across all light treatments using a For Loop. 
+indices <- 3:121
+kruskal_results_list <- vector('list', length = length(indices))
+for (i in 3:121) {
+  
+  kruskal_results_list[[i-2]] <- tryCatch({
+    kruskal.test(
+      x = epgdata[,i],
+      g = epgdata[,2],
+      na.action = na.omit
+    )
+    
+  }, error = function(e) {
+    cat('Column ', i, ' did not run.')
+  return(e)
+    } 
+  )
+}
+
+#Output of all the K.W. tests into a list called kruskal results list. 
+for (i in 1:119) {
+  cat('Column ', i+2, ': \n')
+print(kruskal_results_list[[i]])
+}
+
+#
+p_val_dat <- data.frame(
+  column_num = 3:121,
+  p_vals = rep(0, 119)
+)
+
+for (i in 1:119) {
+  if (!is.null(kruskal_results_list[[i]]$p.value)) {
+    p_val_dat$p_vals[i] <- kruskal_results_list[[i]]$p.value
+  } else {
+    p_val_dat$p_vals[i] <- NA
+  }
+}
+p_val_dat$col_names = colnames(epgdata[3:121])
+# The code below that has been hashtagged out will save the p-value data frame to the file location of choice. This file will list all the statistically significant waveforms from the K.W. tests. 
+#write.csv(p_val_dat,"C:/Users/danie/Desktop/NALAM LAB/EPG/EPG ANALYSIS/24_LD_EPG DATA/p_values_24hrLD_4hr_kruskalwallis.csv", row.names = FALSE)
+```
+
+
+              
+### The code below shows the same process except a different datatable with only two treatments, day and night, was used.
+              
+```{r}
+epgdata_dvn = read.csv('C:/Users/danie/Desktop/NALAM LAB/EPG/EPG ANALYSIS/24_LD_EPG DATA/DKVERSION_DvN_LD_EPGDATA .csv')
+
+indices <- 3:121
+kruskal_results_list_dvn <- vector('list', length = length(indices))
+for (i in 3:121) {
+  
+  kruskal_results_list_dvn[[i-2]] <- tryCatch({
+    kruskal.test(
+      x = epgdata_dvn[,i],
+      g = epgdata_dvn[,2],
+      na.action = na.omit
+    )
+    
+  }, error = function(e) {
+    cat('Column ', i, ' did not run.')
+  return(e)
+    } 
+  )
+}
+#Output of all the K.W. tests into a list called kruskal results list. 
+for (i in 1:119) {
+  cat('Column ', i+2, ': \n')
+print(kruskal_results_list_dvn[[i]])
+}
+
+#
+p_val_dat_dvn <- data.frame(
+  column_num = 3:121,
+  p_vals = rep(0, 119)
+)
+
+for (i in 1:119) {
+  if (!is.null(kruskal_results_list_dvn[[i]]$p.value)) {
+    p_val_dat_dvn$p_vals[i] <- kruskal_results_list_dvn[[i]]$p.value
+  } else {
+    p_val_dat_dvn$p_vals[i] <- NA
+  }
+}
+p_val_dat_dvn$col_names = colnames(epgdata_dvn[3:121])
+
+write.csv(p_val_dat_dvn,"C:/Users/danie/Desktop/NALAM LAB/EPG/EPG ANALYSIS/24_LD_EPG DATA/p_values_DvN_4hr_kruskalwallis.csv", row.names = FALSE)
+
+```
+
+
+### Only a pairwise wilcoxon test is neccesary here because we are only comparing two groups. 
+```{r}
+#running all of the pariwise wilcoxon rank sum tests: correcting using bonferroni, but other corrections might be more useful. 
+indices <- 3:121
+multcomp_results_list <- vector('list', length = length(indices))
+for (i in 3:121) {
+  
+  multcomp_results_list[[i-2]] <- tryCatch({
+    pairwise.wilcox.test(
+      x = epgdata[,i],
+      g = epgdata[,2],
+      na.action = na.omit
+    )
+    
+  }, error = function(e) {
+    cat('Column ', i, ' did not run.')
+  return(e)
+    } 
+  )
+}
+
+#Output of all the pariwise wilcoxon tests into a list called multcomp results list. 
+for (i in 1:119) {
+  cat('Column ', i+2, ': \n')
+print(multcomp_results_list[[i]])
+}
+
+#binding p-values to data frame 
+multcomp_dat <- data.frame(
+  column_num = 3:121,
+  p_vals = rep(0, 119)
+)
+
+for (i in 1:119) {
+  if (!is.null(multcomp_results_list[[i]]$p.value)) {
+    multcomp_dat$p_vals[i] <- multcomp_results_list[[i]]$p.value
+  } else {
+    multcomp_dat$p_vals[i] <- NA
+  }
+}
+multcomp_dat$col_names = colnames(epgdata[3:121])
+
+```
+
+
+
+
